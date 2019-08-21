@@ -1,52 +1,47 @@
-class Settings():
-    '''存储《外星人入侵》的所有设置的类'''
+import pygame
+from pygame.sprite import Group
+from settings import Settings
+from ship import Ship
+from game_stats import GanmeStats
+from button import Button
+from scoreboard import Scoreboard
+import game_functions as gf
 
-    def __init__(self):
-        '''初始化游戏的静态设置'''
-        #屏幕设置
-        self.screen_width = 1200
-        self.screen_height = 800
-        self.bg_color = (230,230,230)
-        #玩家飞船的设置
-        self.ship_speed_factor = 1.5
-        self.ship_limit = 3     #玩家命数+1
+def run_game():
+    # 初始化pygame、设置和屏幕对象
+    pygame.init()
+    ai_settings = Settings()
+    screen = pygame.display.set_mode((ai_settings.screen_width,ai_settings.screen_height))
+    pygame.display.set_caption("Alien Invasion")
 
-        #子弹设置
-        self.bullet_speed_factor = 3
-        self.bullet_width = 3
-        self.bullet_height = 15
-        self.bullet_color = 60,60,60
-        self.bullets_allowed = 10
+    #创建一个用于存储游戏统计信息的实例,并创建记分牌
+    stats = GanmeStats(ai_settings)
+    sb = Scoreboard(ai_settings, screen, stats)
 
-        # 外星人设置
-        self.fleet_drop_speed = 20
+    #创建一艘飞船
+    ship = Ship(ai_settings,screen)
+    #创建一个用于储存子弹的编组
+    bullets = Group()
+    #创建一个外星人编组
+    aliens = Group()
+    #创建外星人群
+    gf.create_fleet(ai_settings, screen, ship, aliens)
 
-        # 以什么样的速度加快游戏节奏
-        self.speedup_scale = 1.2
-        #击落外星人飞船得分随闯关数而增加
-        self.score_scale = 1.5
+    #创建play按钮
+    play_button = Button(ai_settings, screen, "Play")
 
-        self.initialize_dynamic_settings()
+    #开始游戏主循环
+    while True:
 
-    def initialize_dynamic_settings(self):
-        '''初始化随游戏的新进而变化的设置'''
-        self.ship_speed_factor = 1.5
-        self.bullet_speed_factor = 3
-        self.alien_speed_factor = 1
+        #监视键盘和鼠标事件
+        gf.check_events(ai_settings, screen, stats, sb, play_button, ship, aliens, bullets)
+        if stats.game_active:#玩家飞船命数为0前执行循环
+            #玩家飞船移动
+            ship.update()
+            #每次循环都会重绘屏幕,让最近绘制的屏幕可见
+            gf.update_bullets(ai_settings, screen, stats, sb, ship, aliens, bullets)#刷新子弹
+            gf.update_aliens(ai_settings, screen, stats, sb,  ship, aliens, bullets)#刷新外星人飞船
+        gf.update_screen(ai_settings, screen,stats, sb, ship, aliens, bullets, play_button)#刷新屏幕
+        sb.save_high_score()#储存最高分
 
-        # fleet_direction 为1表示向右移，为-1表示向左移
-        self.fleet_direction = 1
-
-        #记分（每击中一个外星人飞船的得分）
-        self.alien_points = 50
-
-    def increase_speed(self):
-        '''提高速度设置and击落外星人得分'''
-        self.ship_speed_factor *= self.speedup_scale
-        self.bullet_speed_factor *= self.speedup_scale
-        self.alien_speed_factor *= self.speedup_scale
-
-        self.alien_points = int(self.alien_points * self.score_scale)
-
-
-
+run_game()
